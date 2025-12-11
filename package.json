@@ -1,15 +1,18 @@
 {
   "name": "todo",
   "version": "1.0.0",
-  "description": "",
+  "description": "Discord Todo Bot with 24/7 uptime on Koyeb",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "discord.js": "^14.25.1"
+    "axios": "^1.7.9",
+    "discord.js": "^14.25.1",
+    "express": "^4.21.2"
   }
 }

@@ -1,7 +1,17 @@
 // 1. 주요 클래스 가져오기
 const { Client, Events, GatewayIntentBits } = require('discord.js');
-const { token } = require('./config.json');
 const fs = require('fs').promises;
+const express = require('express');
+const axios = require('axios');
+
+// 환경 변수 또는 config.json에서 토큰 가져오기
+let token;
+if (process.env.DISCORD_TOKEN) {
+    token = process.env.DISCORD_TOKEN;
+} else {
+    const config = require('./config.json');
+    token = config.token;
+}
 
 // 2. 클라이언트 객체 생성 (Guilds관련, 메시지관련 인텐트 추가)
 const client = new Client({ intents: [
@@ -167,5 +177,37 @@ client.on('messageCreate', async (message) => {
     }
 })
 
-// 5. 시크릿키(토큰)을 통해 봇 로그인 실행
+// 5. Express 서버 설정 (Health Check API)
+const app = express();
+const PORT = process.env.PORT || 8000;
+
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Health check server running on port ${PORT}`);
+});
+
+// 6. Self-ping 메커니즘 (3분마다)
+const SELF_PING_INTERVAL = 3 * 60 * 1000; // 3분
+const appUrl = process.env.APP_URL; // Koyeb 앱 URL
+
+if (appUrl) {
+    setInterval(async () => {
+        try {
+            const response = await axios.get(`${appUrl}/health`);
+            console.log(`[Self-ping] Status: ${response.status} at ${new Date().toISOString()}`);
+        } catch (error) {
+            console.error('[Self-ping] Error:', error.message);
+        }
+    }, SELF_PING_INTERVAL);
+    console.log('Self-ping mechanism activated');
+}
+
+// 7. 시크릿키(토큰)을 통해 봇 로그인 실행
 client.login(token);
