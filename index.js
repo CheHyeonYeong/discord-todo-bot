@@ -640,20 +640,42 @@ app.listen(PORT, () => {
     console.log(`Health check server running on port ${PORT}`);
 });
 
-// 6. Self-ping 메커니즘 (3분마다)
-const SELF_PING_INTERVAL = 3 * 60 * 1000; // 3분
+// 6. Self-ping 메커니즘 (2분마다 - Koyeb 5분 timeout 대비)
+const SELF_PING_INTERVAL = 2 * 60 * 1000; // 2분 (더 안전한 간격)
 const appUrl = process.env.APP_URL; // Koyeb 앱 URL
 
-if (appUrl) {
-    setInterval(async () => {
-        try {
-            const response = await axios.get(`${appUrl}/health`);
-            console.log(`[Self-ping] Status: ${response.status} at ${new Date().toISOString()}`);
-        } catch (error) {
-            console.error('[Self-ping] Error:', error.message);
-        }
-    }, SELF_PING_INTERVAL);
-    console.log('Self-ping mechanism activated');
+if (appUrl && appUrl.trim() !== '') {
+    console.log(`[Self-ping] Initializing with URL: ${appUrl}`);
+
+    // 봇이 완전히 준비된 후 10초 뒤에 첫 ping 시작
+    setTimeout(() => {
+        console.log('[Self-ping] Starting first ping...');
+
+        setInterval(async () => {
+            try {
+                const startTime = Date.now();
+                const response = await axios.get(`${appUrl}/health`, {
+                    timeout: 10000, // 10초 타임아웃
+                    headers: {
+                        'User-Agent': 'Discord-Todo-Bot-SelfPing/1.0'
+                    }
+                });
+                const duration = Date.now() - startTime;
+                console.log(`[Self-ping] ✓ Success - Status: ${response.status}, Duration: ${duration}ms, Time: ${new Date().toISOString()}`);
+            } catch (error) {
+                console.error(`[Self-ping] ✗ Failed - ${error.message} at ${new Date().toISOString()}`);
+                if (error.response) {
+                    console.error(`[Self-ping] Response status: ${error.response.status}`);
+                }
+            }
+        }, SELF_PING_INTERVAL);
+
+        console.log('[Self-ping] Mechanism activated - Pinging every 2 minutes');
+    }, 10000); // 10초 딜레이
+} else {
+    console.warn('[Self-ping] WARNING: APP_URL not set or empty. Self-ping mechanism is DISABLED.');
+    console.warn('[Self-ping] Instance may sleep after 5 minutes of inactivity.');
+    console.warn('[Self-ping] Please set APP_URL environment variable in Koyeb dashboard.');
 }
 
 // 7. 시크릿키(토큰)을 통해 봇 로그인 실행
