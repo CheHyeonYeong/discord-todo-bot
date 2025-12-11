@@ -98,8 +98,8 @@ async function saveSettings(settings) {
     await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 }
 
-// 스레드 찾기 또는 생성
-async function getOrCreateThread(channel, userId, date) {
+// 데이터 초기화 (스레드 생성과 분리)
+async function initializeTodoData(userId, date) {
     const todos = await loadTodos();
 
     // 사용자 데이터 초기화
@@ -115,7 +115,27 @@ async function getOrCreateThread(channel, userId, date) {
         };
     }
 
-    // 기존 스레드가 있으면 찾기
+    await saveTodos(todos);
+    return todos;
+}
+
+// 스레드 찾기 또는 생성
+async function getOrCreateThread(channel, userId, date) {
+    // 1. 먼저 데이터 초기화 (스레드 생성 전에 반드시!)
+    const todos = await initializeTodoData(userId, date);
+
+    // 2. 현재 위치가 이미 스레드인지 확인
+    if (channel.isThread()) {
+        // 스레드 내부에서 호출된 경우, 해당 스레드 반환
+        // threadId를 저장 (나중에 참조용)
+        if (!todos[userId][date].threadId) {
+            todos[userId][date].threadId = channel.id;
+            await saveTodos(todos);
+        }
+        return channel;
+    }
+
+    // 3. 기존 스레드가 있으면 찾기
     if (todos[userId][date].threadId) {
         try {
             // Guild에서 스레드 찾기
@@ -132,7 +152,11 @@ async function getOrCreateThread(channel, userId, date) {
         }
     }
 
-    // 새 스레드 생성 - 먼저 초기 메시지 전송
+    // 4. 새 스레드 생성 - 텍스트/뉴스 채널에서만 가능
+    if (!channel.isTextBased() || channel.isDMBased()) {
+        throw new Error('스레드는 서버의 텍스트 채널에서만 생성할 수 있습니다.');
+    }
+
     const dateStr = getDateString(date);
     const starterMessage = await channel.send(`📅 **${dateStr} Todo 리스트**\n할 일을 추가하려면 \`/todo add\` 명령어를 사용하세요!`);
 
@@ -162,26 +186,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
         switch (subcommand) {
             case 'add': {
+                // 즉시 defer로 응답 (3초 타임아웃 방지)
+                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
                 const todoText = interaction.options.getString('할일');
                 const notify = interaction.options.getBoolean('알림') || false;
 
                 if (!todoText) {
-                    return interaction.reply({ content: '할 일을 입력해주세요!', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '할 일을 입력해주세요!' });
                 }
-
-                // 스레드 생성 또는 가져오기
-                const thread = await getOrCreateThread(interaction.channel, userId, today);
 
                 // 쉼표로 구분하여 여러 할 일 추가
                 const todoItems = todoText.split(',').map(item => item.trim()).filter(item => item);
 
                 if (todoItems.length === 0) {
-                    return interaction.reply({ content: '할 일을 입력해주세요!', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '할 일을 입력해주세요!' });
                 }
 
-                const todos = await loadTodos();
-                const addedTodos = [];
+                // 1. 먼저 데이터 초기화 (스레드 생성 전에!)
+                const todos = await initializeTodoData(userId, today);
 
+                // 2. 할 일 추가
+                const addedTodos = [];
                 for (const item of todoItems) {
                     const newTodo = {
                         id: Date.now() + Math.random(),
@@ -197,7 +223,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                 await saveTodos(todos);
 
-                // 스레드에 응답
+                // 3. 스레드 생성 또는 가져오기 (데이터가 이미 초기화된 상태)
+                const thread = await getOrCreateThread(interaction.channel, userId, today);
+
+                // 4. 스레드에 응답
                 let replyMessage;
                 if (addedTodos.length === 1) {
                     replyMessage = `✅ 할 일이 추가되었습니다: ${addedTodos[0]}`;
@@ -206,7 +235,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 }
 
                 await thread.send(replyMessage);
-                await interaction.reply({ content: `스레드에 할 일을 추가했습니다! ${thread}`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `스레드에 할 일을 추가했습니다! ${thread}` });
 
                 // 알림 기능
                 if (notify) {
