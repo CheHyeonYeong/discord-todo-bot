@@ -24,6 +24,7 @@ const client = new Client({ intents: [
 // 3. 봇이 준비됐을때 한번만 표시할 메시지
 client.once(Events.ClientReady, readyClient => {
     console.log(`Ready! Logged in as ${readyClient.user.tag}`);
+    console.log(`[INFO] Bot is fully ready to accept commands!`);
     setupCronJobs();
 });
 
