@@ -72,15 +72,24 @@ function getDateString(date) {
 async function loadTodos() {
     try {
         const data = await fs.readFile(TODO_FILE, 'utf8');
-        return JSON.parse(data);
+        const parsed = JSON.parse(data);
+        console.log(`[DEBUG] Loaded todos from ${TODO_FILE}:`, JSON.stringify(parsed, null, 2));
+        return parsed;
     } catch (error) {
+        console.log(`[DEBUG] No existing todos file at ${TODO_FILE}, returning empty object`);
         return {};
     }
 }
 
 // Todo 데이터 저장
 async function saveTodos(todos) {
-    await fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 2));
+    try {
+        await fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 2));
+        console.log(`[DEBUG] Saved todos to ${TODO_FILE}:`, JSON.stringify(todos, null, 2));
+    } catch (error) {
+        console.error(`[ERROR] Failed to save todos to ${TODO_FILE}:`, error);
+        throw error;
+    }
 }
 
 // 설정 데이터 로드
@@ -266,7 +275,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
             case 'list': {
                 const todos = await loadTodos();
 
+                console.log(`[DEBUG] list command - userId: ${userId}, today: ${today}`);
+                console.log(`[DEBUG] todos[userId]:`, todos[userId]);
+                console.log(`[DEBUG] todos[userId][today]:`, todos[userId]?.[today]);
+
                 if (!todos[userId] || !todos[userId][today] || todos[userId][today].todos.length === 0) {
+                    console.log(`[DEBUG] No todos found for user ${userId} on ${today}`);
                     return interaction.editReply({ content: '📝 오늘 등록된 할 일이 없습니다.' });
                 }
 
