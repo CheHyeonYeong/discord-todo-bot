@@ -27,9 +27,9 @@ client.once(Events.ClientReady, readyClient => {
     setupCronJobs();
 });
 
-// Todo 파일 경로
-const TODO_FILE = './todos.json';
-const SETTINGS_FILE = './settings.json';
+// Todo 파일 경로 (환경 변수로 설정 가능, 기본값은 현재 디렉토리)
+const TODO_FILE = process.env.TODO_FILE_PATH || './todos.json';
+const SETTINGS_FILE = process.env.SETTINGS_FILE_PATH || './settings.json';
 
 // 기본 설정
 const DEFAULT_SETTINGS = {

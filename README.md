@@ -116,36 +116,53 @@ node deploy-commands.js
 3. 레포지토리 선택
 4. Branch: `main` 선택
 
-### 4. 환경 변수 설정 ⚠️ 중요!
+### 4. Persistent Storage 설정 (데이터 유지를 위해 필수!) ⚠️
+
+재배포 시 데이터가 날아가는 것을 방지하기 위해 **Persistent Volume**을 설정합니다:
+
+1. **Volumes** 탭으로 이동
+2. **Add Volume** 클릭
+3. 설정:
+   - **Mount path**: `/data`
+   - **Size**: `1 GB` (무료)
+4. Volume 생성 완료!
+
+### 5. 환경 변수 설정 ⚠️ 중요!
 
 Build and deployment 섹션에서 Environment Variables 추가:
 
 ```bash
-DISCORD_TOKEN    # Discord 봇 토큰
-CLIENT_ID        # Discord Application ID
-PORT             # 8000
-APP_URL          # https://your-app-name.koyeb.app (앱 생성 후 확인 가능)
+DISCORD_TOKEN         # Discord 봇 토큰
+CLIENT_ID             # Discord Application ID
+PORT                  # 8000
+APP_URL               # https://your-app-name.koyeb.app (앱 생성 후 확인 가능)
+
+# Persistent Storage 경로 (Volume 설정 후)
+TODO_FILE_PATH        # /data/todos.json
+SETTINGS_FILE_PATH    # /data/settings.json
 ```
 
-**중요**: `config.json`이 Git에 포함되지 않으므로, Koyeb에서는 **반드시** 환경 변수로 설정해야 합니다!
+**중요**:
+- `config.json`이 Git에 포함되지 않으므로, Koyeb에서는 **반드시** 환경 변수로 설정해야 합니다!
+- Volume을 설정하지 않으면 **재배포 시 모든 할 일 데이터가 삭제**됩니다!
 
-### 5. 빌드 설정
+### 6. 빌드 설정
 - Build command: `npm install`
 - Run command: `npm start`
 - Port: `8000`
 
-### 6. Health Check 설정
+### 7. Health Check 설정
 - Health check path: `/health`
 - Port: `8000`
 
-### 7. 배포 단계
+### 8. 배포 단계
 
 1. "Deploy" 버튼 클릭
 2. 배포 완료 후 앱 URL 확인 (예: `https://your-app-name.koyeb.app`)
 3. Settings → Environment Variables에서 `APP_URL` 업데이트
 4. 앱 재배포 (자동 또는 수동)
 
-### 8. 슬래시 커맨드 등록 (재배포 시)
+### 9. 슬래시 커맨드 등록 (재배포 시)
 
 **방법 1: 로컬에서 등록 (추천)**
 ```bash
@@ -159,7 +176,7 @@ node deploy-commands.js
 
 슬래시 커맨드는 Discord에 등록되므로 **한 번만** 실행하면 됩니다!
 
-### 9. 작동 확인
+### 10. 작동 확인
 - 브라우저에서 `https://your-app-name.koyeb.app/health` 접속
 - `{"status":"healthy","uptime":...}` 응답이 보이면 성공
 - Discord에서 `/todo` 입력 시 자동완성 확인
@@ -167,16 +184,16 @@ node deploy-commands.js
 
 ### ⚠️ 재배포 시 주의사항
 
-**사라지는 것:**
-- ❌ `todos.json` - 모든 할 일 데이터 초기화
-- ❌ `settings.json` - 설정 초기화
-
-**유지되는 것:**
+**Persistent Volume 설정 시 (권장):**
+- ✅ `todos.json` - Volume에 저장되어 재배포 후에도 유지
+- ✅ `settings.json` - Volume에 저장되어 재배포 후에도 유지
 - ✅ 슬래시 커맨드 등록 (Discord에 저장)
 - ✅ 환경 변수 (Koyeb에 저장)
-- ✅ 코드 변경사항
 
-**해결책**: 중요한 데이터를 유지하려면 MongoDB Atlas 같은 데이터베이스 사용을 고려하세요.
+**Volume 미설정 시:**
+- ❌ `todos.json` - 재배포 시 모든 할 일 데이터 삭제
+- ❌ `settings.json` - 재배포 시 설정 초기화
+- ⚠️ **반드시 위의 "4. Persistent Storage 설정" 참고!**
 
 ### Self-Ping 메커니즘
 이 봇은 3분마다 자동으로 `/health` 엔드포인트에 요청을 보내 Koyeb의 scale-to-zero 정책으로 인한 슬립 모드를 방지합니다. 이를 통해 24시간 무료로 실행됩니다.
