@@ -178,6 +178,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isChatInputCommand()) return;
     if (interaction.commandName !== 'todo') return;
 
+    // ⚠️ 즉시 defer로 응답 (3초 타임아웃 방지) - 맨 처음에!
+    try {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    } catch (error) {
+        console.error('Failed to defer reply:', error);
+        return; // defer 실패 시 조기 종료
+    }
+
     const userId = interaction.user.id;
     const subcommand = interaction.options.getSubcommand();
     const today = getToday();
@@ -186,8 +194,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     try {
         switch (subcommand) {
             case 'add': {
-                // 즉시 defer로 응답 (3초 타임아웃 방지)
-                await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
                 const todoText = interaction.options.getString('할일');
                 const notify = interaction.options.getBoolean('알림') || false;
@@ -261,7 +267,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 const todos = await loadTodos();
 
                 if (!todos[userId] || !todos[userId][today] || todos[userId][today].todos.length === 0) {
-                    return interaction.reply({ content: '📝 오늘 등록된 할 일이 없습니다.', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '📝 오늘 등록된 할 일이 없습니다.' });
                 }
 
                 const embed = new EmbedBuilder()
@@ -276,7 +282,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .setFooter({ text: `총 ${todos[userId][today].todos.length}개` })
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [embed] });
                 break;
             }
 
@@ -285,11 +291,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 const todos = await loadTodos();
 
                 if (!todos[userId] || !todos[userId][today] || todos[userId][today].todos.length === 0) {
-                    return interaction.reply({ content: '오늘 등록된 할 일이 없습니다.', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '오늘 등록된 할 일이 없습니다.' });
                 }
 
                 if (todoNumber < 1 || todoNumber > todos[userId][today].todos.length) {
-                    return interaction.reply({ content: '올바른 번호를 입력해주세요!', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '올바른 번호를 입력해주세요!' });
                 }
 
                 const todo = todos[userId][today].todos[todoNumber - 1];
@@ -299,7 +305,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                 const thread = await getOrCreateThread(interaction.channel, userId, today);
                 await thread.send(`✅ 완료 처리되었습니다: ${todo.text}`);
-                await interaction.reply({ content: '완료 처리되었습니다!', flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: '완료 처리되었습니다!' });
                 break;
             }
 
@@ -308,11 +314,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 const todos = await loadTodos();
 
                 if (!todos[userId] || !todos[userId][today] || todos[userId][today].todos.length === 0) {
-                    return interaction.reply({ content: '오늘 등록된 할 일이 없습니다.', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '오늘 등록된 할 일이 없습니다.' });
                 }
 
                 if (todoNumber < 1 || todoNumber > todos[userId][today].todos.length) {
-                    return interaction.reply({ content: '올바른 번호를 입력해주세요!', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '올바른 번호를 입력해주세요!' });
                 }
 
                 const deleted = todos[userId][today].todos.splice(todoNumber - 1, 1)[0];
@@ -320,7 +326,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                 const thread = await getOrCreateThread(interaction.channel, userId, today);
                 await thread.send(`🗑️ 삭제되었습니다: ${deleted.text}`);
-                await interaction.reply({ content: '삭제되었습니다!', flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: '삭제되었습니다!' });
                 break;
             }
 
@@ -328,13 +334,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 const todos = await loadTodos();
 
                 if (!todos[userId] || !todos[userId][yesterday]) {
-                    return interaction.reply({ content: '어제 등록된 할 일이 없습니다.', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '어제 등록된 할 일이 없습니다.' });
                 }
 
                 const incompleteTodos = todos[userId][yesterday].todos.filter(t => !t.completed);
 
                 if (incompleteTodos.length === 0) {
-                    return interaction.reply({ content: '✅ 어제의 모든 할 일을 완료했습니다!', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '✅ 어제의 모든 할 일을 완료했습니다!' });
                 }
 
                 const embed = new EmbedBuilder()
@@ -348,7 +354,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .setFooter({ text: `총 ${incompleteTodos.length}개 | /todo carry 명령어로 오늘로 이월할 수 있습니다` })
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [embed] });
                 break;
             }
 
@@ -357,13 +363,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 const todos = await loadTodos();
 
                 if (!todos[userId] || !todos[userId][yesterday]) {
-                    return interaction.reply({ content: '어제 등록된 할 일이 없습니다.', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '어제 등록된 할 일이 없습니다.' });
                 }
 
                 const incompleteTodos = todos[userId][yesterday].todos.filter(t => !t.completed);
 
                 if (incompleteTodos.length === 0) {
-                    return interaction.reply({ content: '어제의 미완료 항목이 없습니다.', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '어제의 미완료 항목이 없습니다.' });
                 }
 
                 let todosToCarry = [];
@@ -380,7 +386,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 }
 
                 if (todosToCarry.length === 0) {
-                    return interaction.reply({ content: '올바른 번호를 입력해주세요!', flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: '올바른 번호를 입력해주세요!' });
                 }
 
                 // 오늘로 이월
@@ -407,13 +413,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                 const thread = await getOrCreateThread(interaction.channel, userId, today);
                 await thread.send(`📥 어제의 ${todosToCarry.length}개 항목을 오늘로 이월했습니다:\n${todosToCarry.map(t => `• ${t.text}`).join('\n')}`);
-                await interaction.reply({ content: `${todosToCarry.length}개 항목을 오늘로 이월했습니다!`, flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: `${todosToCarry.length}개 항목을 오늘로 이월했습니다!` });
                 break;
             }
 
             case 'weekly': {
                 const report = await generateWeeklyReport(userId);
-                await interaction.reply({ embeds: [report], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [report] });
                 break;
             }
 
@@ -442,7 +448,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     )
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [embed] });
                 break;
             }
 
@@ -467,19 +473,29 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .setFooter({ text: '매일 스레드가 자동 생성되어 날짜별로 관리됩니다!' })
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ embeds: [embed] });
                 break;
             }
 
             default:
-                await interaction.reply({ content: '알 수 없는 명령어입니다. `/todo help`로 사용법을 확인하세요.', flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: '알 수 없는 명령어입니다. `/todo help`로 사용법을 확인하세요.' });
         }
     } catch (error) {
         console.error('Error handling todo command:', error);
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: '❌ 오류가 발생했습니다. 다시 시도해주세요.', flags: MessageFlags.Ephemeral });
-        } else {
-            await interaction.reply({ content: '❌ 오류가 발생했습니다. 다시 시도해주세요.', flags: MessageFlags.Ephemeral });
+
+        // 안전한 에러 응답 처리
+        try {
+            if (interaction.deferred) {
+                // defer했으면 editReply 사용
+                await interaction.editReply({ content: '❌ 오류가 발생했습니다. 다시 시도해주세요.' });
+            } else if (!interaction.replied) {
+                // 아직 응답 안했으면 reply
+                await interaction.editReply({ content: '❌ 오류가 발생했습니다. 다시 시도해주세요.' });
+            }
+            // 이미 replied면 아무것도 하지 않음 (에러 로그만)
+        } catch (replyError) {
+            console.error('Failed to send error message:', replyError);
+            // 에러 응답도 실패 - 조용히 무시
         }
     }
 });
