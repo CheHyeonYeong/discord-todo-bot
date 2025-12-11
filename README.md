@@ -1,40 +1,106 @@
 # Discord Todo Bot
 
-Discord에서 할 일을 관리할 수 있는 간단한 봇입니다.
+Discord 슬래시 커맨드로 할 일을 관리할 수 있는 봇입니다. 날짜별 스레드로 자동 정리되고 주간 리포트를 제공합니다.
 
-## 기능
+## ✨ 주요 기능
 
-- 할 일 추가 (단일 또는 여러 개)
-- 할 일 목록 조회
-- 할 일 완료 처리
-- 할 일 삭제
+### 📅 스레드 기반 일일 Todo 관리
+- 첫 할 일 추가 시 자동으로 날짜별 스레드 생성 (예: "📅 12월 11일 (수) Todo")
+- 모든 todo 활동이 해당 날짜 스레드 내에서 진행
+- 24시간 후 자동 보관
+
+### 🔔 채널 멤버 알림
+- `/todo add` 명령어에 `알림` 옵션으로 채널 멤버에게 알림
+- @here 멘션과 임베드로 깔끔하게 표시
+
+### ⏰ 일일 자동 정리
+- 매일 자정(00:00) 어제 스레드 자동 보관
+- `/todo yesterday` - 어제 미완료 항목 확인
+- `/todo carry` - 선택적으로 오늘로 이월 (특정 번호 또는 all)
+
+### 📊 주간 성과 리포트
+- 매주 일요일 밤 9시 DM으로 주간 리포트 발송
+- `/todo weekly` - 언제든 즉시 확인 가능
+- 날짜별 완료 항목, 완료율 표시
+
+### ⚙️ 사용자 설정
+- 하루 시작 시간 설정 가능
+- 주간 리포트 요일 설정 가능
 - 사용자별 개별 관리
 
-## 명령어
+## 📋 슬래시 커맨드
 
-- `!todo add [할 일]` - 할 일 추가
-- `!todo add [할 일1], [할 일2], [할 일3]` - 여러 할 일 추가
-- `!todo list` - 할 일 목록 보기
-- `!todo done [번호]` - 할 일 완료 처리
-- `!todo delete [번호]` - 할 일 삭제
-- `!todo help` - 도움말 보기
+```
+/todo add 할일:[내용] 알림:[true/false]
+  - 할 일 추가 (쉼표로 구분하여 여러 개 가능)
+  - 알림 옵션으로 채널 멤버에게 알림 전송
 
-## Discord Bot Token 얻기
+/todo list
+  - 오늘의 할 일 목록 보기
+
+/todo done 번호:[숫자]
+  - 할 일 완료 처리
+
+/todo delete 번호:[숫자]
+  - 할 일 삭제
+
+/todo yesterday
+  - 어제의 미완료 항목 확인
+
+/todo carry 번호들:[1,2,3 또는 all]
+  - 어제의 미완료 항목을 오늘로 이월
+
+/todo weekly
+  - 주간 리포트 즉시 확인
+
+/todo settings 하루시작시간:[0-23] 주간리포트요일:[0-6]
+  - 봇 설정 (하루 시작 시간, 주간 리포트 요일)
+
+/todo help
+  - 도움말 보기
+```
+
+## 🚀 Discord Bot 설정
+
+### 1. Bot Token 및 Client ID 얻기
 
 1. https://discord.com/developers/applications 접속
 2. "New Application" 클릭
 3. 봇 이름 입력 후 생성
-4. 왼쪽 메뉴에서 "Bot" 클릭
-5. "Reset Token" 클릭하여 토큰 복사
-6. Privileged Gateway Intents에서 다음 항목 활성화:
-   - MESSAGE CONTENT INTENT
-   - SERVER MEMBERS INTENT (선택사항)
-7. 왼쪽 메뉴에서 "OAuth2" → "URL Generator" 클릭
-8. Scopes: `bot` 체크
-9. Bot Permissions: `Send Messages`, `Read Messages/View Channels` 체크
-10. 생성된 URL로 봇을 서버에 초대
+4. **General Information** 탭에서 **APPLICATION ID** 복사 (이것이 CLIENT_ID)
+5. 왼쪽 메뉴에서 "Bot" 클릭
+6. "Reset Token" 클릭하여 토큰 복사
+7. Privileged Gateway Intents에서 다음 항목 활성화:
+   - ✅ MESSAGE CONTENT INTENT
+   - ✅ SERVER MEMBERS INTENT (선택사항)
+8. 왼쪽 메뉴에서 "OAuth2" → "URL Generator" 클릭
+9. Scopes: `bot`, `applications.commands` 체크
+10. Bot Permissions:
+    - `Send Messages`
+    - `Read Messages/View Channels`
+    - `Create Public Threads`
+    - `Send Messages in Threads`
+    - `Manage Threads`
+11. 생성된 URL로 봇을 서버에 초대
 
-## Koyeb 배포 방법 (무료 24시간 실행)
+### 2. 슬래시 커맨드 등록
+
+봇을 처음 설정할 때 **한 번만** 실행:
+
+```bash
+# config.json 파일 생성 (로컬 테스트용)
+{
+    "token": "YOUR_BOT_TOKEN",
+    "clientId": "YOUR_CLIENT_ID"
+}
+
+# 슬래시 커맨드 등록
+node deploy-commands.js
+```
+
+성공 메시지가 보이면 Discord에서 `/todo`를 입력했을 때 자동완성이 나타납니다!
+
+## 🌐 Koyeb 배포 방법 (무료 24시간 실행)
 
 ### 1. GitHub 레포지토리 준비
 1. 코드를 GitHub에 push
@@ -50,11 +116,18 @@ Discord에서 할 일을 관리할 수 있는 간단한 봇입니다.
 3. 레포지토리 선택
 4. Branch: `main` 선택
 
-### 4. 환경 변수 설정
+### 4. 환경 변수 설정 ⚠️ 중요!
+
 Build and deployment 섹션에서 Environment Variables 추가:
-- `DISCORD_TOKEN`: Discord 봇 토큰
-- `APP_URL`: Koyeb 앱 URL (예: `https://your-app-name.koyeb.app`)
-  - 앱 생성 후 URL을 확인하고, 다시 설정에서 업데이트 필요
+
+```bash
+DISCORD_TOKEN    # Discord 봇 토큰
+CLIENT_ID        # Discord Application ID
+PORT             # 8000
+APP_URL          # https://your-app-name.koyeb.app (앱 생성 후 확인 가능)
+```
+
+**중요**: `config.json`이 Git에 포함되지 않으므로, Koyeb에서는 **반드시** 환경 변수로 설정해야 합니다!
 
 ### 5. 빌드 설정
 - Build command: `npm install`
@@ -65,29 +138,109 @@ Build and deployment 섹션에서 Environment Variables 추가:
 - Health check path: `/health`
 - Port: `8000`
 
-### 7. 배포
-1. "Deploy" 버튼 클릭
-2. 배포 완료 후 앱 URL 확인
-3. 환경 변수에 `APP_URL` 추가 (앱 URL 복사하여 추가)
-4. 앱 재배포
+### 7. 배포 단계
 
-### 8. 작동 확인
+1. "Deploy" 버튼 클릭
+2. 배포 완료 후 앱 URL 확인 (예: `https://your-app-name.koyeb.app`)
+3. Settings → Environment Variables에서 `APP_URL` 업데이트
+4. 앱 재배포 (자동 또는 수동)
+
+### 8. 슬래시 커맨드 등록 (재배포 시)
+
+**방법 1: 로컬에서 등록 (추천)**
+```bash
+# 로컬에서 한 번만 실행
+node deploy-commands.js
+```
+
+**방법 2: Koyeb 콘솔에서**
+- Koyeb 대시보드 → 앱 → Terminal 탭
+- `node deploy-commands.js` 실행
+
+슬래시 커맨드는 Discord에 등록되므로 **한 번만** 실행하면 됩니다!
+
+### 9. 작동 확인
 - 브라우저에서 `https://your-app-name.koyeb.app/health` 접속
 - `{"status":"healthy","uptime":...}` 응답이 보이면 성공
-- Discord에서 봇 명령어 테스트
+- Discord에서 `/todo` 입력 시 자동완성 확인
+- `/todo help` 명령어로 전체 기능 확인
+
+### ⚠️ 재배포 시 주의사항
+
+**사라지는 것:**
+- ❌ `todos.json` - 모든 할 일 데이터 초기화
+- ❌ `settings.json` - 설정 초기화
+
+**유지되는 것:**
+- ✅ 슬래시 커맨드 등록 (Discord에 저장)
+- ✅ 환경 변수 (Koyeb에 저장)
+- ✅ 코드 변경사항
+
+**해결책**: 중요한 데이터를 유지하려면 MongoDB Atlas 같은 데이터베이스 사용을 고려하세요.
 
 ### Self-Ping 메커니즘
 이 봇은 3분마다 자동으로 `/health` 엔드포인트에 요청을 보내 Koyeb의 scale-to-zero 정책으로 인한 슬립 모드를 방지합니다. 이를 통해 24시간 무료로 실행됩니다.
 
-## 로컬 실행
+## 💻 로컬 실행
 
 ```bash
+# 패키지 설치
 npm install
+
+# config.json 파일 생성
+{
+    "token": "YOUR_BOT_TOKEN",
+    "clientId": "YOUR_CLIENT_ID"
+}
+
+# 슬래시 커맨드 등록 (최초 1회)
+node deploy-commands.js
+
+# 봇 실행
 node index.js
 ```
 
-## 필요한 것
+## 📦 필요한 것
 
 - Discord Bot Token
+- Discord Application ID (Client ID)
 - Node.js (v16 이상)
-- discord.js 라이브러리
+- 의존성:
+  - discord.js (v14+)
+  - express
+  - axios
+  - node-cron
+
+## 🗂️ 데이터 구조
+
+```json
+{
+  "userId": {
+    "2024-12-11": {
+      "threadId": "123456789",
+      "todos": [
+        {
+          "id": 1234567890,
+          "text": "할 일 내용",
+          "completed": false,
+          "createdAt": "2024-12-11T00:00:00.000Z",
+          "completedAt": null
+        }
+      ]
+    }
+  }
+}
+```
+
+## 🤖 자동화 기능
+
+- **매일 00:00**: 어제 스레드 자동 보관
+- **매주 일요일 21:00**: 주간 리포트 DM 발송
+
+## 📝 라이센스
+
+ISC
+
+## 👥 기여
+
+이슈나 풀 리퀘스트는 언제든지 환영합니다!
